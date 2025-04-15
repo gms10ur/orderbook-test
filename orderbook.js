@@ -232,3 +232,6 @@ export const runComparison = async (btcAmount = 0.001, partialFill = false) => {
     console.error(`[Error] Comparison failed: ${error.message}`);
   }
 };
+
+// runComparison(0.001, false); // full fill default
+runComparison(10, true); // partial fill on large volume
