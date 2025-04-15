@@ -191,5 +191,44 @@ export const compareExchanges = async (
   }
 };
 
+// --- CLI ENTRY POINT ---
 
-runComparison(0.001);
+export const runComparison = async (btcAmount = 0.001, partialFill = false) => {
+  if (typeof btcAmount !== "number" || btcAmount <= 0) {
+    console.error(`[Error] Invalid BTC amount: ${btcAmount}`);
+    return;
+  }
+
+  console.log(`Running BTC/USDT exchange comparison...`);
+  console.log(`Requested BTC amount: ${btcAmount}`);
+  console.log(`Partial-fill allowed: ${partialFill}\n`);
+
+  try {
+    const result = await compareExchanges(btcAmount, { partialFill });
+
+    if (result.binance.filledBtc === 0 && result.btcTurk.filledBtc === 0) {
+      console.log(
+        "No sufficient liquidity on either exchange to fill the order."
+      );
+      return;
+    }
+
+    const format = (label, data) => {
+      console.log(`${label}`);
+      console.log(`  Price per BTC : ${data.price}`);
+      console.log(`  USDT needed   : ${data.usdtNeeded}`);
+      console.log(`  Filled BTC    : ${data.filledBtc}`);
+      console.log(`  Unfilled BTC  : ${data.unfilledBtc}`);
+      console.log(`  Partial fill  : ${data.isPartial}`);
+    };
+
+    console.log("--- Comparison Result ---");
+    format("Binance", result.binance);
+    format("BtcTurk", result.btcTurk);
+    console.log(`\nBetter Exchange : ${result.betterExchange}`);
+    console.log(`Price Difference: ${result.priceDifferencePercent}%`);
+    console.log("-------------------------\n");
+  } catch (error) {
+    console.error(`[Error] Comparison failed: ${error.message}`);
+  }
+};
