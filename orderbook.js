@@ -123,6 +123,72 @@ export const calculateUsdtNeeded = (asks, btcAmount, partialFill = false) => {
   };
 };
 
+// --- COMPARISON ---
+
+export const compareExchanges = async (
+  btcAmount,
+  options = { partialFill: true }
+) => {
+  if (typeof btcAmount !== "number" || btcAmount <= 0) {
+    throw new Error("Invalid BTC amount. Must be a positive number.");
+  }
+
+  const { partialFill } = options;
+
+  try {
+    const [binance, btcturk] = await Promise.all([
+      fetchBinanceOrderBook(),
+      fetchBtcTurkOrderBook(),
+    ]);
+
+    const binanceResult = calculateUsdtNeeded(
+      binance.asks,
+      btcAmount,
+      partialFill
+    );
+    const btcturkResult = calculateUsdtNeeded(
+      btcturk.asks,
+      btcAmount,
+      partialFill
+    );
+
+    const isZero = (val) => typeof val !== "number" || isNaN(val) || val <= 0;
+    if (isZero(binanceResult.filledBtc) || isZero(btcturkResult.filledBtc)) {
+      throw new Error(
+        "Filled BTC is zero. Try enabling partial-fill or lowering BTC amount."
+      );
+    }
+
+    const binancePricePerBTC =
+      binanceResult.usdtNeeded / binanceResult.filledBtc;
+    const btcturkPricePerBTC =
+      btcturkResult.usdtNeeded / btcturkResult.filledBtc;
+
+    const betterExchange =
+      binancePricePerBTC < btcturkPricePerBTC ? "Binance" : "BtcTurk";
+
+    const priceDiff = Math.abs(binancePricePerBTC - btcturkPricePerBTC);
+    const priceDifferencePercent = (
+      (priceDiff / Math.min(binancePricePerBTC, btcturkPricePerBTC)) *
+      100
+    ).toFixed(8);
+
+    return {
+      binance: {
+        ...binanceResult,
+        price: binancePricePerBTC.toFixed(8),
+      },
+      btcTurk: {
+        ...btcturkResult,
+        price: btcturkPricePerBTC.toFixed(8),
+      },
+      betterExchange,
+      priceDifferencePercent,
+    };
+  } catch (error) {
+    console.error("Failed to compare exchanges:", error.message);
+    throw new Error("Comparison failed due to a data retrieval error.");
+  }
 };
 
 
