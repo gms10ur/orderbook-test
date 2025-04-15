@@ -35,6 +35,38 @@ export const fetchBinanceOrderBook = async (
   }
 };
 
+export const fetchBtcTurkOrderBook = async (
+  symbol = "BTCUSDT",
+  limit = 100
+) => {
+  const url = "https://api.btcturk.com/api/v2/orderbook";
+  try {
+    const response = await axios.get(url, {
+      params: { pairSymbol: symbol, limit },
+      timeout: 5000,
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`Unexpected BtcTurk status: ${response.status}`);
+    }
+
+    const data = response.data?.data;
+
+
+    return {
+      asks: data.asks,
+      bids: data.bids,
+    };
+  } catch (error) {
+    console.error("BtcTurk API Error:", {
+      message: error.message,
+      code: error.code,
+      isAxiosError: error.isAxiosError,
+    });
+    throw new Error("Failed to fetch order book from BtcTurk");
+  }
+};
+
 };
 
 
