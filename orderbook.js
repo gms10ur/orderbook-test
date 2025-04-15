@@ -1,7 +1,15 @@
 import axios from "axios";
 
-export const runComparison = async (btcAmount = 0.001) => {
-  console.log("Running comparison...");
+// --- VALIDATION HELPERS ---
+
+const validateBinanceData = (data) => {
+  return data && Array.isArray(data.asks) && Array.isArray(data.bids);
+};
+
+const validateBtcTurkData = (data) => {
+  return data && Array.isArray(data.asks) && Array.isArray(data.bids);
+};
+
 // --- FETCH FUNCTIONS ---
 
 export const fetchBinanceOrderBook = async (
@@ -20,6 +28,10 @@ export const fetchBinanceOrderBook = async (
     }
 
     const data = response.data;
+
+    if (!validateBinanceData(data)) {
+      throw new Error("Binance response format is invalid");
+    }
 
     return {
       asks: data.asks,
@@ -52,6 +64,9 @@ export const fetchBtcTurkOrderBook = async (
 
     const data = response.data?.data;
 
+    if (!validateBtcTurkData(data)) {
+      throw new Error("BtcTurk response format is invalid");
+    }
 
     return {
       asks: data.asks,
