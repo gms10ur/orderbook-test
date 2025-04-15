@@ -82,6 +82,47 @@ export const fetchBtcTurkOrderBook = async (
   }
 };
 
+// --- CORE CALCULATION ---
+
+export const calculateUsdtNeeded = (asks, btcAmount, partialFill = false) => {
+  let remaining = btcAmount;
+  let totalCost = 0;
+  let filled = 0;
+
+  for (const [priceStr, quantityStr] of asks) {
+    const price = parseFloat(priceStr);
+    const quantity = parseFloat(quantityStr);
+
+    if (remaining <= quantity) {
+      totalCost += remaining * price;
+      filled += remaining;
+      remaining = 0;
+      break;
+    } else {
+      totalCost += quantity * price;
+      remaining -= quantity;
+      filled += quantity;
+    }
+  }
+
+  if (filled === 0) {
+    remaining = btcAmount; // No BTC was filled
+  }
+
+  const isFilled = remaining === 0;
+
+  if (!isFilled && !partialFill) {
+    throw new Error("Order book does not have enough liquidity for full fill.");
+  }
+
+  return {
+    usdtNeeded: parseFloat(totalCost.toFixed(8)),
+    filledBtc: parseFloat(filled.toFixed(8)),
+    unfilledBtc: parseFloat(remaining.toFixed(8)),
+    isPartial: !isFilled,
+  };
+};
+
 };
 
 
